@@ -1,15 +1,14 @@
 <?php 
 
-include('templates/'.TEMPLATE.'/function/display_widget.php');
-
+$floor_plugin = new FloorPlugin;
 $devices_notPlaced = array(); $devices_placed = array();
 
-if (isset($_GET['id']) && floor_exist($_GET['id'])){
-	$devices_notPlaced = getDevices($_GET['id'], false);
-	$devices_placed = getDevices($_GET['id'], true);
+if (isset($_GET['id']) && $floor_plugin->floor_exist($_GET['id'])){
+	$devices_notPlaced = $floor_plugin->getDevices($_GET['id'], false);
+	$devices_placed = $floor_plugin->getDevices($_GET['id'], true);
 }
 
-$displayBottom = (isset($_GET['id']) && floor_exist($_GET['id'])) ? '' : 'display: none';
+$displayBottom = (isset($_GET['id']) && $floor_plugin->floor_exist($_GET['id'])) ? '' : 'display: none';
 
 echo '
 <script type="text/javascript">global_template = "'.TEMPLATE.'"; var sentence_goBackFloor = "'._('Back to floor selection').'";</script>
@@ -70,7 +69,7 @@ echo '
 			';
 				
 				// The user didn't choose any floor yet
-			if (!isset($_GET['id']) || !floor_exist($_GET['id'])){ 
+			if (!isset($_GET['id']) || !$floor_plugin->floor_exist($_GET['id'])){ 
 		
 		echo '
 			<h4>'._('Choose a floor to display').':</h4>
@@ -87,7 +86,7 @@ echo '
 			</div>';
 			} else {
 				$floor_id = $_GET['id'];
-				$floor_background = getFloorBackground($floor_id);
+				$floor_background = $floor_plugin->getFloorBackground($floor_id);
 				
 				if (is_null($floor_background)){
 					echo '<div id="glob_title" onclick="window.location.href=\'profile_user_installation\';">'._('You didn\'t choose any background image for this floor yet.').'<br />'._('Click here to add one.').'</div>';

@@ -10,43 +10,18 @@
 	include('../../../libs/Admin.class.php');
 	include('../../../libs/Root.class.php');
 	include('../../../libs/Api.class.php');
+	include('../../../libs/FloorPlugin.class.php');
 	
+	$floor_plugin = new FloorPlugin;
 	$id = $_POST['id'];
+	$test = $floor_plugin->testIfRightEditFloor($id);
 	
-	if (!is_numeric($id)){ exit; }
+	if (isset($test['error'])){ echo json_encode($test['error']); exit; }
 	
-		$api_request = new Api();
-		$api_result  = $api_request -> send_request();
-		
-		$link = Link::get_link('mastercommand');
+	$this_floor_background = $floor_plugin->getFloorBackground($id);
 	
-	if (!$api_request->is_co()){
-		echo json_encode(array('error'=>_('You have to be logged on to do that.')));
-		exit;
-	}
-	
-	
-	$user_id = $api_request->getId();
-	
-	$sql = 'SELECT * FROM user_floor WHERE user_id = :user_id AND floor_id = :floor_id';
-	$req = $link->prepare($sql);
-	$req->bindValue(':user_id', $user_id, PDO::PARAM_STR);
- 	$req->bindValue(':floor_id', $id, PDO::PARAM_STR);
-	$req->execute() or die (error_log(serialize($req->errorInfo())));
-	$r = $req->rowCount();
-	
-	if ($r != 1){ echo json_encode(array('error'=>_('This floor doesn\'t belong to you.'))); exit; }
-	
-	$sql = 'SELECT floor_background_url
-		        FROM floor
-		        WHERE floor_id= :floor_id';
-	$req = $link->prepare($sql);
-	$req->bindValue(':floor_id', $id, PDO::PARAM_STR);
-	$req->execute() or die (error_log(serialize($req->errorInfo())));
-	$do = $req->fetch(PDO::FETCH_OBJ);
-	
-	if (!empty($do->floor_background_url)){
-		unlink('/'.$do->floor_background_url);
+	if (!empty($this_floor_background) && file_exists('/'.$this_floor_background)){
+		unlink('/'.$this_floor_background);
 	}
 	
 	$allowed = array('png', 'jpg', 'gif','zip');
@@ -62,28 +37,20 @@
 		exit;
 	}
 	
-	$new_name = random_string(32).'.'.$extension;
+	$key = '';
+	$keys = array_merge(range(0, 9), range('a', 'z'));
+	
+	for ($i = 0; $i < 40; $i++) {
+		$key .= $keys[array_rand($keys)];
+	}
+	
+	$new_name = $key.'.'.$extension;
 	move_uploaded_file($this_file['tmp_name'], $target_dir.$new_name);
 	
-	$sql = 'UPDATE floor
-		        SET floor_background_url= :floor_background_url
-		        WHERE floor_id=:floor_id';
-	$req = $link->prepare($sql);
-	$req->bindValue(':floor_background_url', $dir.$new_name, PDO::PARAM_STR);
-	$req->bindValue(':floor_id', $id, PDO::PARAM_INT);
-	$req->execute() or die (error_log(serialize($req->errorInfo())));
-	
-	echo json_encode(array('success'=>_('Your upload have been successful.')));
-	exit;
-	
-	
-	function random_string($length) {
-		$key = '';
-		$keys = array_merge(range(0, 9), range('a', 'z'));
-
-		for ($i = 0; $i < $length; $i++) {
-			$key .= $keys[array_rand($keys)];
-		}
-
-		return $key;
-	} 
+	if ($floor_plugin->updateFloorBackground($id, $dir.$new_name)){
+		echo json_encode(array('success'=>_('Your upload have been successful.')));
+		exit;
+	} else {
+		echo json_encode(array('error'=>_('An error occured')));
+		exit;
+	}

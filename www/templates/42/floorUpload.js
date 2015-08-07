@@ -30,6 +30,9 @@ function deleteBgImageFloor(args){
 					} else {
 						BootstrapDialog.alert(data.success);
 					}
+				},
+				error: function(data){
+					console.error('An error occured: '+data.responseText);
 				}
 			});
 		} else {

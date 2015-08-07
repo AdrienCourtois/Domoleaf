@@ -1,38 +1,37 @@
 <?php
 	if ($_SERVER['REQUEST_METHOD'] != 'POST'){ exit; }
 	
-	$id = $_POST['id'];
-	
-	if (empty($id) || !is_numeric($id)){
-		exit;
-	}
-	
 	include('../../../config.php');
+	include('../../../functions.php');
 	include('../../../libs/Link.class.php');
 	
-	$link = Link::get_link('mastercommand');
+	include('../../../libs/Guest.class.php');
+	include('../../../libs/User.class.php');
+	include('../../../libs/Admin.class.php');
+	include('../../../libs/Root.class.php');
+	include('../../../libs/Api.class.php');
+	include('../../../libs/FloorPlugin.class.php');
 	
-	$sql = 'SELECT floor_background_url, floor_name
-		        FROM floor
-		        WHERE floor_id= :floor_id';
-	$req = $link->prepare($sql);
-	$req->bindValue(':floor_id', $id, PDO::PARAM_INT);
-	$req->execute() or die (error_log(serialize($req->errorInfo())));
-	$do = $req->fetch(PDO::FETCH_OBJ);
+	$floor_plugin = new FloorPlugin;
+	$id = $_POST['id'];
+	$test = $floor_plugin->testIfRightEditFloor($id);
 	
-	$result = $do->floor_background_url;
+	if (isset($test['error'])){ echo json_encode($test['error']); exit; }
 	
-	echo _('Update '.$do->floor_name.'\'s background');
+	$floor_name = $floor_plugin->getFloorName($id);
+	$floor_background = $floor_plugin->getFloorBackground($id);
+	
+	echo _('Update '.$floor_name.'\'s background');
 	echo '|||';
 	
-	if (empty($result)){
+	if (empty($floor_background)){
 		echo _('You don\'t have any background image for this floor.');
 		echo '|||';
 		echo _('Load one');
 	} else {
 		echo _('This floor already has a background image:');
 		echo '|||';
-		echo $result;
+		echo $floor_background;
 		echo '|||';
 		echo _('Load another one');
 		echo '|||';
